@@ -86,3 +86,47 @@ def test_mae_calculation():
 
     assert mae == pytest.approx(10.0)
     assert mae >= 0
+
+def test_run_experiment_integration(monkeypatch):
+    import src.mp149.train as train_module
+
+    config = load_config()
+
+    X_train, X_val, y_train, y_val = prepare_data(config)
+
+    experiment = {
+        "name": "test_integration",
+        "model": "random_forest",
+        "n_estimators": 5,
+        "max_depth": 3
+    }
+
+    monkeypatch.setattr(train_module.mlflow, "start_run", lambda **kwargs: None)
+    monkeypatch.setattr(train_module.mlflow, "log_param", lambda *args, **kwargs: None)
+    monkeypatch.setattr(train_module.mlflow, "log_metric", lambda *args, **kwargs: None)
+    monkeypatch.setattr(train_module.mlflow.sklearn, "log_model", lambda *args, **kwargs: type("MockInfo", (), {"model_uri": "mock_uri"})())
+    monkeypatch.setattr(train_module.mlflow, "active_run", lambda: type("MockRun", (), {"info": type("MockInfo", (), {"run_id": "test_run"})()})())
+
+    class MockContext:
+        def __enter__(self):
+            return None
+
+        def __exit__(self, *args):
+            return False
+
+    monkeypatch.setattr(train_module.mlflow, "start_run", lambda **kwargs: MockContext())
+
+    pipeline, mae, run_id, model_uri = train_module.run_experiment(
+        experiment,
+        X_train,
+        X_val,
+        y_train,
+        y_val,
+        config,
+        "test_hash"
+    )
+
+    assert pipeline is not None
+    assert mae >= 0
+    assert run_id == "test_run"
+    assert model_uri == "mock_uri"
