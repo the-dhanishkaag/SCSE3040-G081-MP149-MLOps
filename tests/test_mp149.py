@@ -30,3 +30,20 @@ def test_no_data_leakage_column():
     for filename in ["train_clean.csv", "later_clean.csv", "holdout_clean.csv"]:
         df = pd.read_csv(DATA_DIR / filename)
         assert "kg_sold_at_auction" not in df.columns
+def test_no_duplicates_in_cleaned_training_data():
+    df = pd.read_csv(DATA_DIR / "train_clean.csv")
+    assert df.duplicated().sum() == 0
+
+
+def test_sentinel_value_replaced():
+    for filename in ["train_clean.csv", "later_clean.csv", "holdout_clean.csv"]:
+        df = pd.read_csv(DATA_DIR / filename)
+        assert not (df["net_length_m"] == -999).any()
+
+
+def test_boat_categories_standardized():
+    allowed = {"trawler", "country_boat", "motorised"}
+
+    for filename in ["train_clean.csv", "later_clean.csv", "holdout_clean.csv"]:
+        df = pd.read_csv(DATA_DIR / filename)
+        assert set(df["boat"].unique()).issubset(allowed)
