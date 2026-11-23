@@ -1,0 +1,61 @@
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+cleaning:
+  remove_duplicates: true
+
+  sentinel:
+    column: net_length_m
+    value: -999
+    replacement: 812.0
+
+  target_correction:
+    column: catch_kg
+    reference_column: kg_sold_at_auction
+    ratio_min: 9.0
+    ratio_max: 11.0
+    correction_factor: 10
+
+  leakage_columns:
+    - kg_sold_at_auction
+
+  target_column: catch_kg
+
+  id_columns:
+    - record_id
+    - date
+training:
+  target_column: catch_kg
+
+  numeric_features:
+    - trip_hours
+    - distance_from_shore_km
+    - crew
+    - wave_height_m
+    - water_temp_c
+    - net_length_m
+
+  categorical_features:
+    - boat
+    - harbour
+
+  validation:
+    start_date: "2026-05-01"
+
+  experiments:
+    - name: random_forest_1
+      model: random_forest
+      n_estimators: 100
+      max_depth: 5
+
+    - name: random_forest_2
+      model: random_forest
+      n_estimators: 200
+      max_depth: 10
+
+    - name: extra_trees
+      model: extra_trees
+      n_estimators: 100
+      max_depth: 10

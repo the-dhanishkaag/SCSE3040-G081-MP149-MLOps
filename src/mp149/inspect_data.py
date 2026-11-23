@@ -1,5 +1,9 @@
 import pandas as pd
 
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", 2000)
+pd.set_option("display.max_colwidth", None)
+
 train = pd.read_csv("data/raw/train.csv")
 later = pd.read_csv("data/raw/later.csv")
 holdout = pd.read_csv("data/raw/holdout_features.csv")
@@ -16,6 +20,17 @@ print(train.isnull().sum())
 
 print("\nLATER SHAPE:", later.shape)
 print("HOLDOUT SHAPE:", holdout.shape)
+
+print("\n--- LEAKAGE COLUMN CHECK ---")
+
+train_only_columns = set(train.columns) - set(holdout.columns)
+
+print("Columns present in training but absent in holdout:")
+print(train_only_columns)
+
+if "kg_sold_at_auction" in train_only_columns:
+    print("LEAKAGE DETECTED: kg_sold_at_auction")
+
 
 print("\nTRAIN SAMPLE:")
 print(train.head())
@@ -41,6 +56,43 @@ print(train["boat"].value_counts().to_string())
 
 print("\nCanonical boat labels in later data:")
 print(later["boat"].value_counts().to_string())
+print("\n--- UNIT MIX-UP CHECK ---")
+
+boat_mapping = {
+    "trawler": "trawler",
+    "tra.": "trawler",
+    "country boat": "country_boat",
+    "country_boat": "country_boat",
+    "cou.": "country_boat",
+    "motorised": "motorised",
+    "mot.": "motorised"
+}
+
+unit_data = train.copy()
+
+unit_data["boat_group"] = (
+    unit_data["boat"]
+    .str.strip()
+    .str.lower()
+    .map(boat_mapping)
+)
+
+unit_data["net_length_m"] = unit_data["net_length_m"].replace(-999, pd.NA)
+
+numeric_columns = [
+    "trip_hours",
+    "distance_from_shore_km",
+    "crew",
+    "wave_height_m",
+    "water_temp_c",
+    "net_length_m"
+]
+
+print(
+    unit_data.groupby("boat_group")[numeric_columns]
+    .agg(["min", "mean", "max"])
+    .round(2)
+)
 print("\n--- STUCK SENSOR CHECK ---")
 
 numeric_columns = [
