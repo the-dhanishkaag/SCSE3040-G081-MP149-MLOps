@@ -1,0 +1,28 @@
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+cleaning:
+  remove_duplicates: true
+
+  sentinel:
+    column: net_length_m
+    value: -999
+    replacement: 812.0
+
+  target_correction:
+    column: catch_kg
+    reference_column: kg_sold_at_auction
+    ratio_min: 9.0
+    ratio_max: 11.0
+    correction_factor: 10
+
+  leakage_columns:
+    - kg_sold_at_auction
+
+  target_column: catch_kg
+
+  id_columns:
+    - record_id
+    - date
