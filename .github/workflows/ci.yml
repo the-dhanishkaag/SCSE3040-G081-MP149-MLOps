@@ -1,5 +1,5 @@
 
-name: CI Pipeline - Model and API Tests
+name: CI Pipeline - Model, API, Docker and Kubernetes Validation
 
 on:
   push:
@@ -41,3 +41,33 @@ jobs:
           PYTHONPATH: .
         run: |
           python -m pytest -v
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t mp149-fishing-api:v1 .
+
+  kubernetes-validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          sudo install kubeconform /usr/local/bin/kubeconform
+
+      - name: Validate Kubernetes YAML files
+        run: |
+          kubeconform -strict -summary k8s/deployment.yaml k8s/service.yaml
