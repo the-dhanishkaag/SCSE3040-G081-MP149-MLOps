@@ -1,8 +1,9 @@
+
 # MP149 findings --- fill in every value, keep every key.
 # The marking tool reads this file. Write null only where the comment says so.
 # Use the exact column names and group values from your data files.
 
-group_id: "G081"          # your group id, e.g. "G042"
+group_id: "G081"
 problem_id: "MP149"
 
 data_issues:
@@ -37,24 +38,24 @@ data_issues:
 
 tracking:
   experiment_name: null
-  best_run_id: null        # the MLflow run id of your v1 model
+  best_run_id: null
   registered_model_name: null
   champion_version: null
 
 monitoring:
-  psi:                     # cleaned train.csv vs later.csv, 10 bins
-    trip_hours: null
-    distance_from_shore_km: null
-    crew: null
-    wave_height_m: null
-    water_temp_c: null
-    net_length_m: null
-  most_drifted_feature: null
-  mae_by_group:            # v1 on later.csv, per value of harbour
-    'North Jetty': null
-    'South Jetty': null
-    'Lagoon': null
-  worst_served_group: null
-  mae_v1_on_check: null    # v1 on the last 30% of later.csv (by date)
-  mae_v2_on_check: null    # v2 on the same rows
-  decision: null           # promote or keep
+  psi:
+    trip_hours: 3.6973
+    distance_from_shore_km: 0.0366
+    crew: 0.0324
+    wave_height_m: 0.0515
+    water_temp_c: 0.0347
+    net_length_m: 0.0681
+  most_drifted_feature: "trip_hours"
+  mae_by_group:
+    'North Jetty': 75.668468
+    'South Jetty': 92.890424
+    'Lagoon': 237.076847
+  worst_served_group: "Lagoon"
+  mae_v1_on_check: 144.5846
+  mae_v2_on_check: 63.5533
+  decision: "promote"
