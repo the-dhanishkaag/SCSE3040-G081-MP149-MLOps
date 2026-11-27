@@ -1,0 +1,46 @@
+{
+    "reference_dataset": "data/processed/train_clean.csv",
+    "comparison_dataset": "data/processed/later_clean.csv",
+    "reference_rows": 1000,
+    "comparison_rows": 300,
+    "features_analyzed": [
+        "trip_hours",
+        "distance_from_shore_km",
+        "crew",
+        "wave_height_m",
+        "water_temp_c",
+        "net_length_m"
+    ],
+    "bins": 10,
+    "thresholds": {
+        "low": "PSI < 0.10",
+        "moderate": "0.10 <= PSI < 0.25",
+        "high": "PSI >= 0.25"
+    },
+    "results": {
+        "trip_hours": {
+            "psi": 3.697268,
+            "drift_level": "high"
+        },
+        "distance_from_shore_km": {
+            "psi": 0.036599,
+            "drift_level": "low"
+        },
+        "crew": {
+            "psi": 0.032436,
+            "drift_level": "low"
+        },
+        "wave_height_m": {
+            "psi": 0.051542,
+            "drift_level": "low"
+        },
+        "water_temp_c": {
+            "psi": 0.034711,
+            "drift_level": "low"
+        },
+        "net_length_m": {
+            "psi": 0.068096,
+            "drift_level": "low"
+        }
+    }
+}
