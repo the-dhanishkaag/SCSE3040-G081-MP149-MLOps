@@ -1,8 +1,10 @@
 # Stage 4 Holdout Prediction Report (MP149 - G081)
 
-- Model Used: model_v2.joblib (ExtraTreesRegressor pipeline, check-set MAE 63.5533 kg)
-- Input Dataset: data/processed/holdout_clean.csv (250 records)
-- Output CSV: predictions/holdout_predictions.csv
-- MAE Status: Actual catch_kg labels unavailable; holdout predictions generated without calculating MAE.
-- Predicted Catch Mean: 540.0902 kg
-- Predicted Catch Min / Max: 194.3750 kg / 1062.6740 kg
+- Model Used: MP149_Fishing_Boat_Catch_Model@champion
+- MLflow Model Version: 2
+- Input Dataset: data\processed\holdout_clean.csv (250 records)
+- Output CSV: predictions\holdout_predictions.csv
+- Prediction Mean: 541.2661 kg
+- Prediction Min: 197.7003 kg
+- Prediction Max: 1067.3570 kg
+- Output Columns: record_id, prediction
