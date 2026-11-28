@@ -1,40 +1,99 @@
-from pathlib import Path
-import joblib
-import pandas as pd
-FROM_SKL = "sklearn.metrics"
-from sklearn.metrics import mean_absolute_error
 
-MODEL_PATH = Path("models/model_v2.joblib")
+from pathlib import Path
+
+import mlflow
+import pandas as pd
+from mlflow.tracking import MlflowClient
+
+# MLflow configuration
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+
+MODEL_NAME = "MP149_Fishing_Boat_Catch_Model"
+MODEL_ALIAS = "champion"
+
+# File paths
 HOLDOUT_PATH = Path("data/processed/holdout_clean.csv")
 OUTPUT_CSV = Path("predictions/holdout_predictions.csv")
 OUTPUT_REPORT = Path("predictions/holdout_prediction_report.md")
 
-FEATURES = ["trip_hours", "distance_from_shore_km", "crew", "wave_height_m", "water_temp_c", "net_length_m", "boat", "harbour"]
-TARGET_COL = "catch_kg"
+# Model input features
+FEATURES = [
+    "trip_hours",
+    "distance_from_shore_km",
+    "crew",
+    "wave_height_m",
+    "water_temp_c",
+    "net_length_m",
+    "boat",
+    "harbour",
+]
+
 
 def generate_holdout_predictions():
-    model = joblib.load(MODEL_PATH)
+
+    # Load the model assigned the champion alias
+    client = MlflowClient()
+    champion = client.get_model_version_by_alias(
+        MODEL_NAME, MODEL_ALIAS
+    )
+
+    model_uri = f"models:/{MODEL_NAME}@{MODEL_ALIAS}"
+    model = mlflow.pyfunc.load_model(model_uri)
+
+    # Load holdout data
     holdout_df = pd.read_csv(HOLDOUT_PATH)
-    missing = [c for c in FEATURES if c not in holdout_df.columns]
+
+    # Validate required columns
+    required_columns = ["record_id"] + FEATURES
+    missing = [
+        column for column in required_columns
+        if column not in holdout_df.columns
+    ]
+
     if missing:
         raise ValueError(f"Missing columns: {missing}")
-    preds = model.predict(holdout_df[FEATURES])
-    out = pd.DataFrame()
-    if "record_id" in holdout_df.columns:
-        out["record_id"] = holdout_df["record_id"]
-    if "date" in holdout_df.columns:
-        out["date"] = holdout_df["date"]
-    out["predicted_catch_kg"] = preds.round(4)
-    out["model_used"] = "model_v2.joblib"
-    has_labels = TARGET_COL in holdout_df.columns and holdout_df[TARGET_COL].notna().all()
-    mae_msg = f"Computed MAE: {mean_absolute_error(holdout_df[TARGET_COL], preds):.4f} kg" if has_labels else "Actual catch_kg labels unavailable; holdout predictions generated without calculating MAE."
+
+    if holdout_df["record_id"].isna().any():
+        raise ValueError("Holdout contains missing record_id values")
+
+    # Generate predictions
+    predictions = model.predict(holdout_df[FEATURES])
+
+    # Create exactly two required output columns
+    output = pd.DataFrame({
+        "record_id": holdout_df["record_id"],
+        "prediction": predictions.round(4),
+    })
+
+    if len(output) != len(holdout_df):
+        raise ValueError("Prediction count does not match holdout rows")
+
+    # Save CSV
     OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(OUTPUT_CSV, index=False)
-    report = f"# Stage 4 Holdout Prediction Report (MP149 - G081)\n\n- Model Used: model_v2.joblib (ExtraTreesRegressor pipeline, check-set MAE 63.5533 kg)\n- Input Dataset: data/processed/holdout_clean.csv ({len(out)} records)\n- Output CSV: predictions/holdout_predictions.csv\n- MAE Status: {mae_msg}\n- Predicted Catch Mean: {out['predicted_catch_kg'].mean():.4f} kg\n- Predicted Catch Min / Max: {out['predicted_catch_kg'].min():.4f} kg / {out['predicted_catch_kg'].max():.4f} kg\n"
+    output.to_csv(OUTPUT_CSV, index=False)
+
+    # Generate report
+    report = f"""# Stage 4 Holdout Prediction Report (MP149 - G081)
+
+- Model Used: {MODEL_NAME}@{MODEL_ALIAS}
+- MLflow Model Version: {champion.version}
+- Input Dataset: {HOLDOUT_PATH} ({len(output)} records)
+- Output CSV: {OUTPUT_CSV}
+- Prediction Mean: {output['prediction'].mean():.4f} kg
+- Prediction Min: {output['prediction'].min():.4f} kg
+- Prediction Max: {output['prediction'].max():.4f} kg
+- Output Columns: record_id, prediction
+"""
+
     OUTPUT_REPORT.write_text(report, encoding="utf-8")
-    print(mae_msg)
-    print(f"Saved {len(out)} predictions to {OUTPUT_CSV}")
-    return out
+
+    print(f"Champion model version: {champion.version}")
+    print(f"Saved {len(output)} predictions to {OUTPUT_CSV}")
+    print(f"Output columns: {list(output.columns)}")
+    print(f"Prediction mean: {output['prediction'].mean():.4f} kg")
+
+    return output
+
 
 if __name__ == "__main__":
     generate_holdout_predictions()
